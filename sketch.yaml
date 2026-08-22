@@ -15,6 +15,7 @@ profiles:
       - WiFiManager (2.0.17)
       - WiFiWebServer (1.10.1)
       - ArduinoJson (7.4.3)
+      - ArduinoOTA (1.1.1)
     programmer: ""
     port: /dev/cu.usbserial-110
     port_config:
@@ -45,3 +46,4 @@ profiles:
       bits: "8"
       parity: none
       stop_bits: one
+default_profile: esp8266_wemos_d1_r2_mini

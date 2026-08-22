@@ -4,7 +4,7 @@ const char INDEX_PAGE[] PROGMEM = R"=====(
 <html>
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Wemos Spray Controller</title>
+    <title>Smart Humidifier</title>
     <style>
       body {
         font-family: Arial, sans-serif;
@@ -195,9 +195,16 @@ const char INDEX_PAGE[] PROGMEM = R"=====(
         /><br />
         <button type="submit">Simpan</button>
       </form>
-      <p />
-      <button class="btn-reset" onclick="location.href = '/reset_wifi'">
+    </div>
+
+    <div class="card">
+      <h3>Systems</h3>
+      <button class="btn-reset" onclick="resetWifi()">
         Reset Koneksi WiFi
+      </button>
+      <br />
+      <button class="btn-reset" onclick="location.href = '/server-ota'">
+        Update Firmware
       </button>
     </div>
 
@@ -218,6 +225,24 @@ const char INDEX_PAGE[] PROGMEM = R"=====(
             document.getElementById("spraying").innerText = data.spraying == "1" ? "ON" : "OFF";
           });
       }, 2000);
+
+      // function to reset wifi connection
+      function resetWifi() {
+        if (confirm("Apakah Anda yakin ingin mereset koneksi WiFi?")) {
+        fetch("/reset_wifi")
+            .then((response) => {
+              if (response.ok) {
+                alert("Koneksi WiFi telah direset.");
+              } else {
+                alert("Gagal mereset koneksi WiFi.");
+              }
+            })
+          .catch((error) => {
+            console.error("Error:", error);
+            alert("Terjadi kesalahan saat mereset koneksi WiFi.");
+          });
+        }
+      }
     </script>
   </body>
 </html>

@@ -11,9 +11,11 @@
 #define BLYNK_PRINT Serial
 
 #include <ESP8266WiFi.h>
-#include <DNSServer.h>
+#include <ESP8266mDNS.h>
 #include <ESP8266WebServer.h>
+#include <ESP8266HTTPUpdateServer.h>
 #include <WiFiManager.h> // Include WiFiManager library
+#include <ArduinoOTA.h>
 #include <BlynkSimpleEsp8266.h>
 #include <Adafruit_AHT10.h>
 #include <LittleFS.h>
@@ -22,12 +24,36 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 #include "index_page.h"
+#include "ota_page.h"
 
-#define SDA_PIN 4 //D2
-#define SCL_PIN 5 //D1
+ESP8266HTTPUpdateServer httpUpdater;
+
+#define SDA_PIN 4 // D2
+#define SCL_PIN 5 // D1
 
 String deviceLocation = "";
-String version = "1.0.1";
+String version = "1.0.8";
+String localDNS = "smarthumidifier";
+
+// Local DNS name for OTA updates =======
+void initDNS()
+{
+    // Get the unique chip ID
+    uint32_t chipId = ESP.getChipId();
+    localDNS = "smarthumidifier-" + String(chipId, HEX);
+
+    if (MDNS.begin(localDNS.c_str()))
+    {
+        Serial.println("Local DNS started: http://" + localDNS + ".local");
+    }
+    else
+    {
+        Serial.println("Error setting up MDNS responder!");
+    }
+
+    MDNS.addService("http", "tcp", 80);
+}
+// Local DNS name for OTA updates =======
 
 // LittleFS =============================
 const char *CONFIG_PATH = "/config.json";
@@ -165,7 +191,7 @@ void checkConnection()
 // WIFI MANAGER =========================
 
 // LED INDICATOR ========================
-#define LED_INDICATOR_PIN 2
+#define LED_INDICATOR_PIN 2 // D4 on NodeMCU, built-in LED
 bool ledIndicator = false;
 int ledStart = 0;
 long ledDuration = 300; // 300ms
@@ -259,7 +285,7 @@ void updateAHTSensor()
 // TEMP & HUM ===========================
 
 // SPRAYING =============================
-#define SPRAY_PIN 16
+#define SPRAY_PIN 16 // D0 on NodeMCU
 bool spraying = false;
 bool isAutoSpray = true;
 unsigned long minHumidityStart = 42;
@@ -570,8 +596,15 @@ void initWebserver()
     server.on("/spray_off", handleWebSprayOFF);
     server.on("/reset_wifi", handleWebResetWiFi);
 
+    // Define what happens when you visit the OTA update page
+    server.on("/server-ota", []()
+              { server.send(200, "text/html", OTA_PAGE); });
+    //   Setup OTA Update Server
+    httpUpdater.setup(&server);
+
     // Start the web server
     server.begin();
+
     Serial.println("HTTP server started");
 }
 // WEBSERVER ============================
@@ -583,7 +616,7 @@ void setup()
     initLittleFS();
 
     // Initialize I2C Bus explicitly
-    Wire.begin(SDA_PIN, SCL_PIN); 
+    Wire.begin(SDA_PIN, SCL_PIN);
 
     // initOLED();
     initLedIndicator();
@@ -591,6 +624,9 @@ void setup()
     initAHTSensor();
 
     initConnection();
+    
+    // Setup mDNS for local network access
+    initDNS();
 }
 
 void loop()
@@ -608,4 +644,5 @@ void loop()
         Blynk.run();
         server.handleClient();
     }
+    MDNS.update();
 }
