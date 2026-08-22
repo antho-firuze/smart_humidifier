@@ -26,21 +26,19 @@
 #include "index_page.h"
 #include "ota_page.h"
 
-ESP8266HTTPUpdateServer httpUpdater;
-
 #define SDA_PIN 4 // D2
 #define SCL_PIN 5 // D1
 
 String deviceLocation = "";
-String version = "1.0.8";
-String localDNS = "smarthumidifier";
+String version = "1.0.9";
 
 // Local DNS name for OTA updates =======
+String localDNS = "smarthumidifier";
 void initDNS()
 {
     // Get the unique chip ID
     uint32_t chipId = ESP.getChipId();
-    localDNS = "smarthumidifier-" + String(chipId, HEX);
+    localDNS = localDNS + "-" + String(chipId, HEX);
 
     if (MDNS.begin(localDNS.c_str()))
     {
@@ -139,10 +137,11 @@ void initLittleFS()
 // LittleFS =============================
 
 // WIFI MANAGER =========================
+String apName = "SmartHumidifier";
 WiFiManager wifiManager;
 bool isConnected = false;
 unsigned long lastWiFiCheckTime = 0;
-unsigned long portalStartTime = 0;
+// unsigned long portalStartTime = 0;
 const unsigned long TIMEOUT_MS = 60000; // 60 seconds timeout before restart
 void initConnection()
 {
@@ -152,10 +151,11 @@ void initConnection()
     wifiManager.setConfigPortalBlocking(false);
 
     // Start the asynchronous connection attempt
-    wifiManager.autoConnect("MyWemosAP", "");
+    apName = apName + "-" + String(ESP.getChipId(), HEX);
+    wifiManager.autoConnect(apName.c_str(), "");
 
     // Mark when we started trying to connect
-    portalStartTime = millis();
+    // portalStartTime = millis();
 }
 void checkConnection()
 {
@@ -478,6 +478,7 @@ void updateOLED()
 // OLED =================================
 
 // WEBSERVER ============================
+ESP8266HTTPUpdateServer httpUpdater;
 ESP8266WebServer server(80);
 void handleRoot()
 {
@@ -624,7 +625,7 @@ void setup()
     initAHTSensor();
 
     initConnection();
-    
+
     // Setup mDNS for local network access
     initDNS();
 }
