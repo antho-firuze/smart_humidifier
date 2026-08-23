@@ -96,7 +96,7 @@ const char OTA_PAGE[] PROGMEM = R"=====(
   <body>
     <div class="card">
       <h1>Smart Humidifier</h1>
-      <div class="version" id="version">v{version}</div>
+      <div class="version" id="version"></div>
       <hr />
       <form method="POST" action="/update" enctype="multipart/form-data">
         <h3>Firmware Upload</h3>
@@ -110,7 +110,7 @@ const char OTA_PAGE[] PROGMEM = R"=====(
         fetch("/data")
           .then((response) => response.json())
           .then((data) => {
-            document.getElementById("version").innerText = data.version;
+            document.getElementById("version").innerText = "v" + data.version;
           });
       }, 2000);
     </script>

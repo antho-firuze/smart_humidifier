@@ -16,10 +16,11 @@ profiles:
       - WiFiWebServer (1.10.1)
       - ArduinoJson (7.4.3)
     programmer: ""
-    port: /dev/cu.usbserial-110
+    port: /dev/cu.usbserial-A5069RR4
     port_config:
       baudrate: "115200"
       lineEnding: "\r\n"
       bits: "8"
       parity: none
       stop_bits: one
+default_profile: esp8266_wemos_d1_r2_mini

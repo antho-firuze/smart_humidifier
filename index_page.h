@@ -88,7 +88,7 @@ const char INDEX_PAGE[] PROGMEM = R"=====(
   <body>
     <div class="card">
       <h1>Smart Humidifier</h1>
-      <div class="version" id="version">v{version}</div>
+      <div class="version" id="version"></div>
       <hr />
       <div>
         Device Location:
@@ -214,7 +214,7 @@ const char INDEX_PAGE[] PROGMEM = R"=====(
           .then((response) => response.json())
           .then((data) => {
             document.getElementById("device_location").innerText = data.device_location;
-            document.getElementById("version").innerText = data.version;
+            document.getElementById("version").innerText = "v" + data.version;
             document.getElementById("temperature").innerText = data.temperature;
             document.getElementById("humidity").innerText = data.humidity;
             document.getElementById("offset_temp").innerText = data.offset_temp;

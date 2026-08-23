@@ -30,7 +30,7 @@
 #define SCL_PIN 5 // D1
 
 String deviceLocation = "";
-String version = "1.0.9";
+String version = "1.0.10";
 
 // Local DNS name for OTA updates =======
 String localDNS = "smarthumidifier";
@@ -285,7 +285,7 @@ void updateAHTSensor()
 // TEMP & HUM ===========================
 
 // SPRAYING =============================
-#define SPRAY_PIN 16 // D0 on NodeMCU
+#define SPRAY_PIN 3 
 bool spraying = false;
 bool isAutoSpray = true;
 unsigned long minHumidityStart = 42;
