@@ -40,31 +40,7 @@ const char OTA_PAGE[] PROGMEM = R"=====(
       form {
         margin: 20px 0;
       }
-      input[type="number"] {
-        width: 80%;
-        padding: 10px;
-        font-size: 16px;
-        margin: 10px 0;
-        border: 1px solid #ccc;
-        border-radius: 5px;
-      }
-      input[type="text"] {
-        width: 80%;
-        padding: 10px;
-        font-size: 16px;
-        margin: 10px 0;
-        border: 1px solid #ccc;
-        border-radius: 5px;
-      }
-      input[type="file"] {
-        width: 80%;
-        padding: 10px;
-        font-size: 16px;
-        margin: 10px 0;
-        border: 1px solid #ccc;
-        border-radius: 5px;
-      }
-      file {
+      select, input[type="number"], input[type="text"], input[type="time"], input[type="range"], input[type="file"] {
         width: 85%;
         padding: 10px;
         font-size: 16px;
@@ -104,16 +80,6 @@ const char OTA_PAGE[] PROGMEM = R"=====(
         <button type="submit" class="btn-reset" value="Update">Update</button>
       </form>
     </div>
-
-    <script>
-      setInterval(function () {
-        fetch("/data")
-          .then((response) => response.json())
-          .then((data) => {
-            document.getElementById("version").innerText = "v" + data.version;
-          });
-      }, 2000);
-    </script>
   </body>
 </html>
 )=====";

@@ -1,28 +1,20 @@
-/*************************************************************
-
-  This is a simple demo of sending and receiving some data.
-  Be sure to check out other examples!
- *************************************************************/
-
-#define BLYNK_TEMPLATE_ID "TMPL6L3RFk1YW"
-#define BLYNK_TEMPLATE_NAME "Quickstart Device"
-#define BLYNK_AUTH_TOKEN "M7fW5gaAIE5_kDRPyCdVWcOHnhmnwqhR"
-
-#define BLYNK_PRINT Serial
-
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
 #include <ESP8266WebServer.h>
 #include <ESP8266HTTPUpdateServer.h>
 #include <WiFiManager.h> // Include WiFiManager library
-#include <ArduinoOTA.h>
-#include <BlynkSimpleEsp8266.h>
 #include <Adafruit_AHT10.h>
 #include <LittleFS.h>
 #include <ArduinoJson.h>
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
+
+#include "led_indicator.h"
+#include "littleFS_config.h"
+#include "dns_config.h"
+#include "wifi_manager_config.h"
+#include "blynk_config.h"
 #include "index_page.h"
 #include "ota_page.h"
 
@@ -30,213 +22,7 @@
 #define SCL_PIN 5 // D1
 
 String deviceLocation = "";
-String version = "1.0.10";
-
-// Local DNS name for OTA updates =======
-String localDNS = "smarthumidifier";
-void initDNS()
-{
-    // Get the unique chip ID
-    uint32_t chipId = ESP.getChipId();
-    localDNS = localDNS + "-" + String(chipId, HEX);
-
-    if (MDNS.begin(localDNS.c_str()))
-    {
-        Serial.println("Local DNS started: http://" + localDNS + ".local");
-    }
-    else
-    {
-        Serial.println("Error setting up MDNS responder!");
-    }
-
-    MDNS.addService("http", "tcp", 80);
-}
-// Local DNS name for OTA updates =======
-
-// LittleFS =============================
-const char *CONFIG_PATH = "/config.json";
-// Fungsi untuk MENYIMPAN Key-Value
-bool setKeyValue(const char *key, const char *value)
-{
-    StaticJsonDocument<512> doc; // Sesuaikan ukuran byte dengan kebutuhan data Anda
-
-    // 1. Baca file yang sudah ada agar data lama tidak terhapus
-    if (LittleFS.exists(CONFIG_PATH))
-    {
-        File file = LittleFS.open(CONFIG_PATH, "r");
-        if (file)
-        {
-            deserializeJson(doc, file);
-            file.close();
-        }
-    }
-
-    // 2. Tambah atau update pasangan key-value
-    doc[key] = value;
-
-    // 3. Tulis kembali data terbaru ke dalam file (Mode "w" akan menimpa file lama)
-    File file = LittleFS.open(CONFIG_PATH, "w");
-    if (!file)
-    {
-        return false; // Gagal membuka file
-    }
-
-    // serializeJson(doc, file) langsung menulis ke file tanpa memakan banyak RAM
-    if (serializeJson(doc, file) == 0)
-    {
-        file.close();
-        return false; // Gagal menulis
-    }
-
-    file.close();
-    Serial.println("Key-Value pair saved successfully.");
-    return true; // Sukses
-}
-// Fungsi untuk MEMBACA Key-Value
-String getKeyValue(const char *key, const char *defaultValue = "")
-{
-    if (!LittleFS.exists(CONFIG_PATH))
-    {
-        return defaultValue;
-    }
-
-    File file = LittleFS.open(CONFIG_PATH, "r");
-    if (!file)
-    {
-        return defaultValue;
-    }
-
-    StaticJsonDocument<512> doc;
-    DeserializationError error = deserializeJson(doc, file);
-    file.close();
-
-    if (error)
-    {
-        return defaultValue;
-    }
-
-    // Jika key tidak ditemukan, kembalikan nilai default
-    if (!doc.containsKey(key))
-    {
-        return defaultValue;
-    }
-
-    return doc[key].as<String>();
-}
-void initLittleFS()
-{
-    if (!LittleFS.begin())
-    {
-        Serial.println("Failed to load LittleFS!");
-        return;
-    }
-    Serial.println("LittleFS Successfully Loaded.");
-
-    deviceLocation = getKeyValue("device_location", "");
-}
-// LittleFS =============================
-
-// WIFI MANAGER =========================
-String apName = "SmartHumidifier";
-WiFiManager wifiManager;
-bool isConnected = false;
-unsigned long lastWiFiCheckTime = 0;
-// unsigned long portalStartTime = 0;
-const unsigned long TIMEOUT_MS = 60000; // 60 seconds timeout before restart
-void initConnection()
-{
-    wifiManager.setConnectTimeout(15);
-
-    // Enable non-blocking mode
-    wifiManager.setConfigPortalBlocking(false);
-
-    // Start the asynchronous connection attempt
-    apName = apName + "-" + String(ESP.getChipId(), HEX);
-    wifiManager.autoConnect(apName.c_str(), "");
-
-    // Mark when we started trying to connect
-    // portalStartTime = millis();
-}
-void checkConnection()
-{
-    if (!isConnected && millis() - lastWiFiCheckTime >= 1000)
-    {
-        lastWiFiCheckTime = millis();
-        if (WiFi.status() == WL_CONNECTED && WiFi.localIP() == IPAddress(0, 0, 0, 0))
-        {
-            Serial.println("\n[ERROR] Connected but IP is 0.0.0.0! Restarting...");
-            delay(2000);
-            ESP.restart();
-        }
-        if (WiFi.status() == WL_CONNECTED && WiFi.localIP() != IPAddress(0, 0, 0, 0))
-        {
-            Serial.print("\n[SUCCESS] Connected! IP: ");
-            Serial.println(WiFi.localIP());
-
-            // Running Setup()
-            Blynk.begin(BLYNK_AUTH_TOKEN, WiFi.SSID().c_str(), WiFi.psk().c_str());
-            initWebserver();
-            delay(1000);
-
-            isConnected = true;
-        }
-        // if (WiFi.status() != WL_CONNECTED && millis() - portalStartTime >= TIMEOUT_MS)
-        // {
-        //     Serial.println("\n[TIMEOUT] Connection failed to establish. Restarting...");
-        //     delay(2000);
-        //     ESP.restart();
-        // }
-    }
-}
-// WIFI MANAGER =========================
-
-// LED INDICATOR ========================
-#define LED_INDICATOR_PIN 2 // D4 on NodeMCU, built-in LED
-bool ledIndicator = false;
-int ledStart = 0;
-long ledDuration = 300; // 300ms
-long ledDelay = 5000;   // 5s
-void initLedIndicator()
-{
-    pinMode(LED_INDICATOR_PIN, OUTPUT);
-    startLedIndicator();
-}
-void startLedIndicator()
-{
-    digitalWrite(LED_INDICATOR_PIN, LOW);
-    ledIndicator = true;
-    ledStart = millis();
-}
-void stopLedIndicator()
-{
-    digitalWrite(LED_INDICATOR_PIN, HIGH);
-    ledIndicator = false;
-    ledStart = millis();
-}
-void updateLedIndicator()
-{
-    if (!isConnected)
-    {
-        if (millis() - ledStart >= 200)
-        {
-            digitalWrite(LED_INDICATOR_PIN, !digitalRead(LED_INDICATOR_PIN));
-            ledStart = millis();
-        }
-    }
-    else
-    {
-        if (ledIndicator && millis() - ledStart >= ledDuration)
-        {
-            stopLedIndicator();
-        }
-
-        if (!ledIndicator && millis() - ledStart >= ledDelay)
-        {
-            startLedIndicator();
-        }
-    }
-}
-// LED INDICATOR ========================
+String version = "1.1.0";
 
 // TEMP & HUM ===========================
 Adafruit_AHT10 aht;
@@ -285,7 +71,7 @@ void updateAHTSensor()
 // TEMP & HUM ===========================
 
 // SPRAYING =============================
-#define SPRAY_PIN 3 
+#define SPRAY_PIN 3
 bool spraying = false;
 bool isAutoSpray = true;
 unsigned long minHumidityStart = 42;
@@ -482,21 +268,24 @@ ESP8266HTTPUpdateServer httpUpdater;
 ESP8266WebServer server(80);
 void handleRoot()
 {
-    server.send_P(200, "text/html", INDEX_PAGE);
+    String html = INDEX_PAGE;
+    html.replace("{version}", String(version));
+    html.replace("{device_location}", String(deviceLocation));
+    html.replace("{offset_temp}", String(offsetTemp, 1));
+    html.replace("{offset_hum}", String(offsetHum, 1));
+    html.replace("{is_auto}", String(isAutoSpray ? "Auto" : "Manual"));
+    html.replace("{min_hum_start}", String(minHumidityStart));
+    html.replace("{max_hum_stop}", String(maxHumidityStop));
+    html.replace("{spraying}", String(spraying ? "ON" : "OFF"));
+    html.replace("{ip_address}", WiFi.localIP().toString());
+    html.replace("{dns_name}", "http://" + localDNS + ".local");
+    server.send_P(200, "text/html", html.c_str());
 }
 void handleData()
 {
     String json = "{";
-    json += "\"device_location\":\"" + String(deviceLocation) + "\"";
-    json += ", \"version\":\"" + String(version) + "\"";
-    json += ", \"temperature\":\"" + String(temperature, 1) + "\"";
+    json += "\"temperature\":\"" + String(temperature, 1) + "\"";
     json += ", \"humidity\":\"" + String(humidity, 1) + "\"";
-    json += ", \"offset_temp\":\"" + String(offsetTemp, 1) + "\"";
-    json += ", \"offset_hum\":\"" + String(offsetHum, 1) + "\"";
-    json += ", \"is_auto\":\"" + String(isAutoSpray ? "1" : "0") + "\"";
-    json += ", \"min_hum_start\":\"" + String(minHumidityStart) + "\"";
-    json += ", \"max_hum_stop\":\"" + String(maxHumidityStop) + "\"";
-    json += ", \"spraying\":\"" + String(spraying ? "1" : "0") + "\"";
     json += "}";
 
     server.sendHeader("Cache-Control", "no-cache");
@@ -599,7 +388,10 @@ void initWebserver()
 
     // Define what happens when you visit the OTA update page
     server.on("/server-ota", []()
-              { server.send(200, "text/html", OTA_PAGE); });
+              { 
+    String html = OTA_PAGE;
+    html.replace("{version}", String(version));
+    server.send(200, "text/html", html); });
     //   Setup OTA Update Server
     httpUpdater.setup(&server);
 
@@ -608,6 +400,10 @@ void initWebserver()
 
     Serial.println("HTTP server started");
 }
+void runWebServer()
+{
+    server.handleClient();
+}
 // WEBSERVER ============================
 
 void setup()
@@ -615,6 +411,7 @@ void setup()
     Serial.begin(115200);
 
     initLittleFS();
+    deviceLocation = getKeyValue("device_location", "");
 
     // Initialize I2C Bus explicitly
     Wire.begin(SDA_PIN, SCL_PIN);
@@ -625,7 +422,6 @@ void setup()
     initAHTSensor();
 
     initConnection();
-
     // Setup mDNS for local network access
     initDNS();
 }
@@ -638,12 +434,20 @@ void loop()
     updateLedIndicator();
     updateSpray();
     updateAHTSensor();
+    checkConnection([](bool connected)
+                    {
+        if (connected) {
+            // This section only running once, after connection establish !
+            Serial.println("This only running once !");
 
-    checkConnection();
+            // initBlynk();
+            initWebserver();
+            currLedState = CONNECTED;
+        } });
     if (isConnected)
     {
-        Blynk.run();
-        server.handleClient();
+        // runBlynk();
+        runWebServer();
     }
-    MDNS.update();
+    runDNS();
 }

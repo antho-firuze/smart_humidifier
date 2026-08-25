@@ -40,23 +40,7 @@ const char INDEX_PAGE[] PROGMEM = R"=====(
       form {
         margin: 20px 0;
       }
-      input[type="number"] {
-        width: 80%;
-        padding: 10px;
-        font-size: 16px;
-        margin: 10px 0;
-        border: 1px solid #ccc;
-        border-radius: 5px;
-      }
-      input[type="text"] {
-        width: 80%;
-        padding: 10px;
-        font-size: 16px;
-        margin: 10px 0;
-        border: 1px solid #ccc;
-        border-radius: 5px;
-      }
-      select {
+      select, input[type="number"], input[type="text"], input[type="time"], input[type="range"], input[type="file"] {
         width: 85%;
         padding: 10px;
         font-size: 16px;
@@ -88,11 +72,11 @@ const char INDEX_PAGE[] PROGMEM = R"=====(
   <body>
     <div class="card">
       <h1>Smart Humidifier</h1>
-      <div class="version" id="version"></div>
+      <div class="version" id="version">{version}</div>
       <hr />
       <div>
         Device Location:
-        <div class="value" id="device_location"></div>
+        <div class="value" id="device_location">{device_location}</div>
       </div>
       <div>
         Temperature:
@@ -104,27 +88,27 @@ const char INDEX_PAGE[] PROGMEM = R"=====(
       </div>
       <div>
         Set Offset Temp:
-        <div class="value" id="offset_temp">0</div>
+        <div class="value" id="offset_temp">{offset_temp}</div>
       </div>
       <div>
         Set Offset Humidity:
-        <div class="value" id="offset_hum">0</div>
+        <div class="value" id="offset_hum">{offset_hum}</div>
       </div>
       <div>
         Auto Spray:
-        <div class="value" id="is_auto">0</div>
+        <div class="value" id="is_auto">{is_auto}</div>
       </div>
       <div>
         Min Humidity Start:
-        <div class="value" id="min_hum_start">0</div>
+        <div class="value" id="min_hum_start">{min_hum_start}</div>
       </div>
       <div>
         Max Humidity Stop:
-        <div class="value" id="max_hum_stop">0</div>
+        <div class="value" id="max_hum_stop">{max_hum_stop}</div>
       </div>
       <div>
         Spraying Status:
-        <div class="value" id="spraying">0</div>
+        <div class="value" id="spraying">{spraying}</div>
       </div>
       <br />
       <button class="btn-spray" onclick="location.href = '/spray_on'">
@@ -138,67 +122,75 @@ const char INDEX_PAGE[] PROGMEM = R"=====(
     <div class="card">
       <h3>Pengaturan Variabel</h3>
       <form action="/set_device_location" method="GET">
-        <label>Ubah Lokasi Perangkat:</label><br />
+        <label>Ubah Lokasi Perangkat:</label>
         <input
           type="text"
           name="device_location"
           id="input_device_location"
           required
-        /><br />
+        />
         <button type="submit">Simpan</button>
       </form>
       <form action="/set_offset_temp" method="GET">
-        <label>Ubah Offset Temperatur:</label><br />
+        <label>Ubah Offset Temperatur:</label>
         <input
           type="number"
           name="offset_temp"
           id="input_offset_temp"
           required
-        /><br />
+        />
         <button type="submit">Simpan</button>
       </form>
       <form action="/set_offset_hum" method="GET">
-        <label>Ubah Offset Kelembapan:</label><br />
+        <label>Ubah Offset Kelembapan:</label>
         <input
           type="number"
           name="offset_hum"
           id="input_offset_hum"
           required
-        /><br />
+        />
         <button type="submit">Simpan</button>
       </form>
       <form action="/set_auto_spray" method="GET">
-        <label>Ubah Mode Spraying:</label><br />
+        <label>Ubah Mode Spraying:</label>
         <select name="is_auto" id="input_is_auto">
           <option value="1">Auto</option>
           <option value="0">Manual</option></select
-        ><br />
+        >
         <button type="submit">Simpan</button>
       </form>
       <form action="/set_min_hum_start" method="GET">
-        <label>Ubah Min Humidity Start:</label><br />
+        <label>Ubah Min Humidity Start:</label>
         <input
           type="number"
           name="min_hum_start"
           id="input_min_hum_start"
           required
-        /><br />
+        />
         <button type="submit">Simpan</button>
       </form>
       <form action="/set_max_hum_stop" method="GET">
-        <label>Ubah Max Humidity Stop:</label><br />
+        <label>Ubah Max Humidity Stop:</label>
         <input
           type="number"
           name="max_hum_stop"
           id="input_max_hum_stop"
           required
-        /><br />
+        />
         <button type="submit">Simpan</button>
       </form>
     </div>
 
     <div class="card">
       <h3>Systems</h3>
+      <div>
+        IP Address:
+        <div class="value" id="ip_address">{ip_address}</div>
+      </div>
+      <div>
+        DNS Name:
+        <div class="value" id="dns_name">{dns_name}</div>
+      </div>
       <button class="btn-reset" onclick="resetWifi()">
         Reset Koneksi WiFi
       </button>
@@ -213,16 +205,8 @@ const char INDEX_PAGE[] PROGMEM = R"=====(
         fetch("/data")
           .then((response) => response.json())
           .then((data) => {
-            document.getElementById("device_location").innerText = data.device_location;
-            document.getElementById("version").innerText = "v" + data.version;
             document.getElementById("temperature").innerText = data.temperature;
             document.getElementById("humidity").innerText = data.humidity;
-            document.getElementById("offset_temp").innerText = data.offset_temp;
-            document.getElementById("offset_hum").innerText = data.offset_hum;
-            document.getElementById("is_auto").innerText = data.is_auto == "1" ? "Auto" : "Manual";
-            document.getElementById("min_hum_start").innerText = data.min_hum_start;
-            document.getElementById("max_hum_stop").innerText = data.max_hum_stop;
-            document.getElementById("spraying").innerText = data.spraying == "1" ? "ON" : "OFF";
           });
       }, 2000);
 
