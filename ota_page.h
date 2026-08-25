@@ -72,7 +72,7 @@ const char OTA_PAGE[] PROGMEM = R"=====(
   <body>
     <div class="card">
       <h1>Smart Humidifier</h1>
-      <div class="version" id="version"></div>
+      <div class="version" id="version">{version}</div>
       <hr />
       <form method="POST" action="/update" enctype="multipart/form-data">
         <h3>Firmware Upload</h3>

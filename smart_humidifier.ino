@@ -22,7 +22,7 @@
 #define SCL_PIN 5 // D1
 
 String deviceLocation = "";
-String version = "1.1.0";
+String version = "1.1.1";
 
 // TEMP & HUM ===========================
 Adafruit_AHT10 aht;
@@ -78,6 +78,9 @@ unsigned long minHumidityStart = 42;
 unsigned long maxHumidityStop = 50;
 void initSpray()
 {
+    // Prevent floating trigger on bootup
+    pinMode(SPRAY_PIN, INPUT_PULLUP);
+
     pinMode(SPRAY_PIN, OUTPUT);
     isAutoSpray = getKeyValue("isAutoSpray", "1").toInt() == 1;
     minHumidityStart = getKeyValue("minHumidityStart", "42").toInt();
@@ -271,14 +274,14 @@ void handleRoot()
     String html = INDEX_PAGE;
     html.replace("{version}", String(version));
     html.replace("{device_location}", String(deviceLocation));
+    html.replace("{ip_address}", WiFi.localIP().toString());
+    html.replace("{dns_name}", "http://" + localDNS + ".local");
     html.replace("{offset_temp}", String(offsetTemp, 1));
     html.replace("{offset_hum}", String(offsetHum, 1));
     html.replace("{is_auto}", String(isAutoSpray ? "Auto" : "Manual"));
     html.replace("{min_hum_start}", String(minHumidityStart));
     html.replace("{max_hum_stop}", String(maxHumidityStop));
     html.replace("{spraying}", String(spraying ? "ON" : "OFF"));
-    html.replace("{ip_address}", WiFi.localIP().toString());
-    html.replace("{dns_name}", "http://" + localDNS + ".local");
     server.send_P(200, "text/html", html.c_str());
 }
 void handleData()
